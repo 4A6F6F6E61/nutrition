@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nutrition/providers.dart';
+import 'package:nutrition/providers/supabase_providers.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:nutrition/main.dart';

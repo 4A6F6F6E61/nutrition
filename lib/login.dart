@@ -3,7 +3,7 @@ import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:nutrition/providers.dart';
+import 'package:nutrition/providers/supabase_providers.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreen extends HookConsumerWidget {
@@ -35,7 +35,9 @@ class LoginScreen extends HookConsumerWidget {
 
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Account created. Check your email to verify.')),
+              const SnackBar(
+                content: Text('Account created. Check your email to verify.'),
+              ),
             );
           }
 
@@ -50,14 +52,16 @@ class LoginScreen extends HookConsumerWidget {
         }
       } on AuthException catch (error) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(error.message)));
           dev.log(error.message, name: 'LoginScreen');
         }
       } catch (error) {
         if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Authentication failed: $error')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Authentication failed: $error')),
+          );
         }
       } finally {
         isLoading.value = false;
@@ -76,7 +80,10 @@ class LoginScreen extends HookConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Sign in to continue', style: Theme.of(context).textTheme.headlineSmall),
+                  Text(
+                    'Sign in to continue',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: emailController,
@@ -102,8 +109,13 @@ class LoginScreen extends HookConsumerWidget {
                       labelText: 'Password',
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
-                        icon: Icon(obscurePassword.value ? Icons.visibility_off : Icons.visibility),
-                        onPressed: () => obscurePassword.value = !obscurePassword.value,
+                        icon: Icon(
+                          obscurePassword.value
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () =>
+                            obscurePassword.value = !obscurePassword.value,
                       ),
                     ),
                     obscureText: obscurePassword.value,
@@ -124,8 +136,10 @@ class LoginScreen extends HookConsumerWidget {
                       ),
                       obscureText: obscurePassword.value,
                       validator: (value) {
-                        if (value == null || value.isEmpty) return 'Please confirm your password';
-                        if (value != passwordController.text) return 'Passwords do not match';
+                        if (value == null || value.isEmpty)
+                          return 'Please confirm your password';
+                        if (value != passwordController.text)
+                          return 'Passwords do not match';
                         return null;
                       },
                     ),
@@ -141,7 +155,9 @@ class LoginScreen extends HookConsumerWidget {
                               width: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : Text(isRegister.value ? 'Create account' : 'Sign in'),
+                          : Text(
+                              isRegister.value ? 'Create account' : 'Sign in',
+                            ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -150,7 +166,9 @@ class LoginScreen extends HookConsumerWidget {
                       isRegister.value = !isRegister.value;
                     },
                     child: Text(
-                      isRegister.value ? 'Have an account? Sign in' : 'Create an account',
+                      isRegister.value
+                          ? 'Have an account? Sign in'
+                          : 'Create an account',
                     ),
                   ),
                 ],
