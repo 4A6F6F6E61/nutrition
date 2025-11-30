@@ -11,10 +11,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
 
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_KEY']!,
-  );
+  await Supabase.initialize(url: dotenv.env['SUPABASE_URL']!, anonKey: dotenv.env['SUPABASE_KEY']!);
 
   runApp(const ProviderScope(child: NutritionApp()));
 }
@@ -30,10 +27,7 @@ class NutritionApp extends HookConsumerWidget {
     return MaterialApp.router(
       title: 'Nutrition',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: themeColor.color,
-          brightness: Brightness.dark,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: themeColor.color, brightness: Brightness.dark),
         useMaterial3: true,
         sliderTheme: const SliderThemeData(year2023: false),
       ),

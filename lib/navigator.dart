@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:nutrition/providers/supabase_providers.dart';
 
 class NavigatorScaffold extends HookConsumerWidget {
   const NavigatorScaffold({super.key, required this.shell});

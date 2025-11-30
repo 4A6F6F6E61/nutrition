@@ -18,7 +18,10 @@ class RecipeCard extends HookConsumerWidget {
     final colorScheme = theme.colorScheme;
 
     final imageUrlFuture = useMemoized(
-      () => getImageUrl(ref, buildImagePath(recipe.userId, 'recipes', recipe.imagePath ?? '')),
+      () => getImageUrl(
+        ref,
+        buildImagePath(recipe.userId, 'recipes', recipe.imagePath ?? ''),
+      ),
     );
     final imageUrl = useFuture(imageUrlFuture).data;
 
@@ -45,7 +48,11 @@ class RecipeCard extends HookConsumerWidget {
                         return Container(
                           color: colorScheme.primaryContainer,
                           child: Center(
-                            child: Icon(Icons.restaurant, size: 48, color: Colors.amber),
+                            child: Icon(
+                              Icons.restaurant,
+                              size: 48,
+                              color: Colors.amber,
+                            ),
                           ),
                         );
                       },
@@ -70,14 +77,20 @@ class RecipeCard extends HookConsumerWidget {
                   children: [
                     Text(
                       recipe.name,
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const Spacer(),
                     Row(
                       children: [
-                        Icon(Icons.restaurant_menu, size: 14, color: colorScheme.onSurfaceVariant),
+                        Icon(
+                          Icons.restaurant_menu,
+                          size: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${recipe.servings} servings',
@@ -87,14 +100,22 @@ class RecipeCard extends HookConsumerWidget {
                         ),
                       ],
                     ),
-                    if (recipe.prepTimeMinutes != null || recipe.cookTimeMinutes != null) ...[
+                    if (recipe.prepTimeMinutes != null ||
+                        recipe.cookTimeMinutes != null) ...[
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.schedule, size: 14, color: colorScheme.onSurfaceVariant),
+                          Icon(
+                            Icons.schedule,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                           const SizedBox(width: 4),
                           Text(
-                            _formatTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes),
+                            _formatTime(
+                              recipe.prepTimeMinutes,
+                              recipe.cookTimeMinutes,
+                            ),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),

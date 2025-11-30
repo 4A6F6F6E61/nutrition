@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:nutrition/providers/ingredient_provider.dart';
 import 'package:nutrition/providers/supabase_providers.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddIngredientSheet extends HookConsumerWidget {
   const AddIngredientSheet({super.key});
@@ -252,7 +254,7 @@ class AddIngredientSheet extends HookConsumerWidget {
                         }
 
                         isUploading.value = true;
-                        String? uploadedImagePath;
+                        String? uploadedImageFileName;
 
                         // Upload image if selected
                         if (selectedImage.value != null) {
@@ -260,17 +262,22 @@ class AddIngredientSheet extends HookConsumerWidget {
                             final client = ref.read(supabaseClientProvider);
                             final session = ref.read(sessionProvider).value;
                             if (session != null) {
-                              final bytes = await File(selectedImage.value!.path).readAsBytes();
-                              final fileExt = selectedImage.value!.path.split('.').last;
-                              final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
-                              final filePath = '${session.user.id}/ingredients/$fileName';
+                              final rawBytes = await File(selectedImage.value!.path).readAsBytes();
+                              final decodedImage = img.decodeImage(rawBytes);
+                              if (decodedImage == null) throw 'Failed to process image';
+                              final compressedBytes = img.encodeJpg(decodedImage, quality: 80);
+
+                              final time = DateTime.now().millisecondsSinceEpoch;
 
                               await client.storage
                                   .from('nutrition-images')
-                                  .uploadBinary(filePath, bytes);
+                                  .uploadBinary(
+                                    '${session.user.id}/ingredients/$time.jpg',
+                                    compressedBytes,
+                                    fileOptions: const FileOptions(contentType: 'image/jpeg'),
+                                  );
 
-                              // Store only the relative path, not the full URL
-                              uploadedImagePath = filePath;
+                              uploadedImageFileName = time.toString();
                             }
                           } catch (e) {
                             isUploading.value = false;
@@ -290,7 +297,7 @@ class AddIngredientSheet extends HookConsumerWidget {
                               description: descriptionController.text.isEmpty
                                   ? null
                                   : descriptionController.text,
-                              imagePath: uploadedImagePath,
+                              imagePath: uploadedImageFileName,
                               calories: calories,
                               protein: protein,
                               carbohydrates: carbs,
