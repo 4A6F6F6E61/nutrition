@@ -10,6 +10,7 @@ import 'package:nutrition/tabs/home.dart';
 import 'package:nutrition/tabs/ingredients.dart';
 import 'package:nutrition/tabs/recipes.dart';
 import 'package:nutrition/tabs/settings.dart';
+import 'package:nutrition/pages/recipe_detail.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(sessionProvider);
@@ -19,22 +20,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/home',
     refreshListenable: RouterRefreshStream(authStream),
     routes: [
-      GoRoute(
-        path: '/login',
-        name: 'login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', name: 'login', builder: (context, state) => const LoginScreen()),
+
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) =>
-            NavigatorScaffold(shell: navigationShell),
+        builder: (context, state, navigationShell) => NavigatorScaffold(shell: navigationShell),
         branches: [
           StatefulShellBranch(
             routes: [
-              GoRoute(
-                path: '/home',
-                name: 'home',
-                builder: (context, state) => const HomeScreen(),
-              ),
+              GoRoute(path: '/home', name: 'home', builder: (context, state) => const HomeScreen()),
             ],
           ),
           StatefulShellBranch(
@@ -43,6 +36,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/recipes',
                 name: 'recipes',
                 builder: (context, state) => const RecipesScreen(),
+                routes: [
+                  GoRoute(
+                    path: '/:id',
+                    name: 'recipe_detail',
+                    builder: (context, state) =>
+                        RecipeDetailPage(recipeId: state.pathParameters['id']!),
+                  ),
+                ],
               ),
             ],
           ),
