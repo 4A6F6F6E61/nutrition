@@ -1,10 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:nutrition/models/meal_log.dart';
 import 'package:nutrition/providers/meal_log_provider.dart';
 import 'package:nutrition/providers/recipe_provider.dart';
+import 'package:nutrition/theme.dart';
 import 'package:nutrition/util.dart';
 import 'package:nutrition/utils/image_utils.dart';
 
@@ -16,22 +16,17 @@ class MealLogCard extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final theme = CupertinoTheme.of(context);
     final recipeAsync = ref.watch(recipeProvider(log.recipeId));
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      color: colorScheme.surfaceContainerHighest,
-      child: recipeAsync.when(
-        data: (recipe) {
-          if (recipe == null) {
-            return const ListTile(title: Text('Recipe not found'));
-          }
-          return ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            leading: recipe.imagePath != null
+    return recipeAsync.when(
+      data: (recipe) {
+        if (recipe == null) {
+          return const SizedBox();
+        }
+        return Row(
+          children: [
+            recipe.imagePath != null
                 ? FutureBuilder<String>(
                     future: getImageUrl(
                       ref,
@@ -43,34 +38,39 @@ class MealLogCard extends HookConsumerWidget {
                           borderRadius: BorderRadius.circular(8),
                           child: CachedNetworkImage(
                             imageUrl: snapshot.data!,
-                            width: 56,
-                            height: 56,
+                            width: 64,
+                            height: 64,
                             fit: BoxFit.cover,
                             errorWidget: (_, _, _) => Container(
-                              width: 56,
-                              height: 56,
-                              color: colorScheme.primaryContainer,
-                              child: Icon(Icons.restaurant, color: colorScheme.onPrimaryContainer),
+                              width: 64,
+                              height: 64,
+                              color: AppTheme.sheetActionBackground,
+                              child: Icon(
+                                CupertinoIcons.square_fill,
+                                color: AppTheme.sheetActionForeground,
+                              ),
                             ),
                           ),
                         );
                       }
-
                       return Container(
-                        width: 56,
-                        height: 56,
+                        width: 64,
+                        height: 64,
                         decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer,
+                          color: AppTheme.sheetActionBackground,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         alignment: Alignment.center,
                         child: snapshot.connectionState == ConnectionState.waiting
                             ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                width: 20,
+                                height: 20,
+                                child: CupertinoActivityIndicator(radius: 8),
                               )
-                            : Icon(Icons.restaurant, color: colorScheme.onPrimaryContainer),
+                            : Icon(
+                                CupertinoIcons.square_fill,
+                                color: AppTheme.sheetActionForeground,
+                              ),
                       );
                     },
                   )
@@ -78,37 +78,44 @@ class MealLogCard extends HookConsumerWidget {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer,
+                      color: AppTheme.sheetActionBackground,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.restaurant, color: colorScheme.onPrimaryContainer),
+                    child: Icon(CupertinoIcons.square_fill, color: AppTheme.sheetActionForeground),
                   ),
-            title: Text(recipe.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Column(
+            const SizedBox(width: 12),
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 4),
-                Text('${log.servingsConsumed} serving${log.servingsConsumed != 1 ? 's' : ''}'),
                 Text(
-                  formatTime(log.consumedAt),
-                  style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                  recipe.name,
+                  style: theme.textTheme.textStyle.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${log.servingsConsumed} serving${log.servingsConsumed != 1 ? 's' : ''} | ${formatTime(log.consumedAt)}',
+                  style: theme.textTheme.textStyle.copyWith(color: AppTheme.textSecondary),
                 ),
               ],
             ),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete_outline),
+            Spacer(),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              child: const Icon(CupertinoIcons.delete, color: AppTheme.buttonPrimary, size: 24),
               onPressed: () async {
-                final confirm = await showDialog<bool>(
+                final confirm = await showCupertinoDialog<bool>(
                   context: context,
-                  builder: (context) => AlertDialog(
+                  builder: (context) => CupertinoAlertDialog(
                     title: const Text('Delete meal log'),
                     content: const Text('Are you sure you want to remove this meal?'),
                     actions: [
-                      TextButton(
+                      CupertinoDialogAction(
                         onPressed: () => Navigator.pop(context, false),
                         child: const Text('Cancel'),
                       ),
-                      FilledButton(
+                      CupertinoDialogAction(
+                        isDestructiveAction: true,
                         onPressed: () => Navigator.pop(context, true),
                         child: const Text('Delete'),
                       ),
@@ -121,12 +128,11 @@ class MealLogCard extends HookConsumerWidget {
                 }
               },
             ),
-          );
-        },
-        loading: () =>
-            const ListTile(leading: CircularProgressIndicator(), title: Text('Loading...')),
-        error: (err, stack) => ListTile(title: Text('Error: $err')),
-      ),
+          ],
+        );
+      },
+      loading: () => const SizedBox(child: CupertinoActivityIndicator(radius: 8)),
+      error: (err, stack) => SizedBox(child: Text('Error: $err')),
     );
   }
 }

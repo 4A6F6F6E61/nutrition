@@ -1,11 +1,12 @@
 import 'dart:developer' as dev;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:nutrition/models/recipe.dart';
+import 'package:nutrition/theme.dart';
 import 'package:nutrition/utils/image_utils.dart';
 
 class RecipeCard extends HookConsumerWidget {
@@ -15,22 +16,24 @@ class RecipeCard extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final textTheme = CupertinoTheme.of(context).textTheme;
 
     final imageUrlFuture = useMemoized(
       () => getImageUrl(ref, buildImagePath(recipe.userId, 'recipes', recipe.imagePath ?? '')),
     );
     final imageUrl = useFuture(imageUrlFuture).data;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: 0,
-      color: colorScheme.surfaceContainerHighest,
-      child: InkWell(
-        onTap: () {
-          context.pushNamed('recipe_detail', pathParameters: {'id': recipe.id});
-        },
+    return GestureDetector(
+      onTap: () {
+        context.pushNamed('recipe_detail', pathParameters: {'id': recipe.id});
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.backgroundColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.borderColor),
+        ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -43,25 +46,25 @@ class RecipeCard extends HookConsumerWidget {
                         imageUrl: imageUrl,
                         fit: BoxFit.cover,
                         width: double.infinity,
-                        errorWidget: (_, _, error) {
+                        errorWidget: (_, __, error) {
                           dev.log("Error loading image: $error");
                           return Container(
-                            color: colorScheme.primaryContainer,
-                            child: Center(
-                              child: Icon(Icons.restaurant, size: 48, color: Colors.amber),
+                            color: AppTheme.cardBackground,
+                            child: const Center(
+                              child: Icon(
+                                CupertinoIcons.photo,
+                                size: 48,
+                                color: AppTheme.textPrimary,
+                              ),
                             ),
                           );
                         },
                       ),
                     )
                   : Container(
-                      color: colorScheme.primaryContainer,
-                      child: Center(
-                        child: Icon(
-                          Icons.restaurant,
-                          size: 48,
-                          color: colorScheme.onPrimaryContainer,
-                        ),
+                      color: AppTheme.cardBackground,
+                      child: const Center(
+                        child: Icon(CupertinoIcons.photo, size: 48, color: AppTheme.textPrimary),
                       ),
                     ),
             ),
@@ -74,19 +77,28 @@ class RecipeCard extends HookConsumerWidget {
                   children: [
                     Text(
                       recipe.name,
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: textTheme.textStyle.copyWith(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: CupertinoColors.white,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const Spacer(),
                     Row(
                       children: [
-                        Icon(Icons.restaurant_menu, size: 14, color: colorScheme.onSurfaceVariant),
+                        const Icon(
+                          CupertinoIcons.person_2_fill,
+                          size: 14,
+                          color: CupertinoColors.systemGrey,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${recipe.servings} servings',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
+                          style: textTheme.textStyle.copyWith(
+                            fontSize: 13,
+                            color: CupertinoColors.systemGrey,
                           ),
                         ),
                       ],
@@ -95,12 +107,17 @@ class RecipeCard extends HookConsumerWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.schedule, size: 14, color: colorScheme.onSurfaceVariant),
+                          const Icon(
+                            CupertinoIcons.time,
+                            size: 14,
+                            color: CupertinoColors.systemGrey,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             _formatTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                            style: textTheme.textStyle.copyWith(
+                              fontSize: 13,
+                              color: CupertinoColors.systemGrey,
                             ),
                           ),
                         ],

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show ColorScheme;
 import 'package:nutrition/components/macro_circle.dart';
 
 class MacrosBreakdown extends StatelessWidget {
@@ -30,21 +31,21 @@ class MacrosBreakdown extends StatelessWidget {
           label: 'Protein',
           value: protein,
           goal: proteinGoal,
-          color: Colors.red,
+          color: CupertinoColors.systemRed,
           colorScheme: colorScheme,
         ),
         MacroCircle(
           label: 'Carbs',
           value: carbs,
           goal: carbsGoal,
-          color: Colors.blue,
+          color: CupertinoColors.systemBlue,
           colorScheme: colorScheme,
         ),
         MacroCircle(
           label: 'Fat',
           value: fat,
           goal: fatGoal,
-          color: Colors.orange,
+          color: CupertinoColors.systemOrange,
           colorScheme: colorScheme,
         ),
       ],

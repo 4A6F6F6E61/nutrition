@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:image/image.dart' as img;
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
@@ -25,9 +25,6 @@ class AddRecipeSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     final nameController = useTextEditingController();
     final descriptionController = useTextEditingController();
     final servingsController = useTextEditingController(text: '4');
@@ -89,9 +86,19 @@ class AddRecipeSheet extends HookConsumerWidget {
           } catch (e) {
             isUploading.value = false;
             if (context.mounted) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text('Failed to upload image: $e')));
+              showCupertinoDialog(
+                context: context,
+                builder: (context) => CupertinoAlertDialog(
+                  title: const Text('Error'),
+                  content: Text('Failed to upload image: $e'),
+                  actions: [
+                    CupertinoDialogAction(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
             }
             return;
           }
@@ -122,12 +129,36 @@ class AddRecipeSheet extends HookConsumerWidget {
         if (context.mounted) context.pop();
       } on String catch (message) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+          showCupertinoDialog(
+            context: context,
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text('Error'),
+              content: Text(message),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
           return;
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+          showCupertinoDialog(
+            context: context,
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text('Error'),
+              content: Text('Error: $e'),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
           return;
         }
       } finally {
@@ -135,278 +166,350 @@ class AddRecipeSheet extends HookConsumerWidget {
       }
     }
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.3,
-      maxChildSize: 0.95,
-      expand: false,
-      snap: true,
-      snapSizes: const [0.6, 0.95],
-      builder: (context, scrollController) => Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Column(
-          children: [
-            Container(
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.9,
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1C1E),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      child: Column(
+        children: [
+          // Header with handle bar
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              children: [
+                Container(
+                  width: 36,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.systemGrey,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const SizedBox(width: 16),
+                    const Text(
+                      'New Recipe',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: CupertinoColors.white,
+                      ),
+                    ),
+                    const Spacer(),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () => Navigator.pop(context),
+                      child: const Icon(
+                        CupertinoIcons.xmark_circle_fill,
+                        color: CupertinoColors.systemGrey,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Content
+          Expanded(
+            child: ListView(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-              child: Row(
-                children: [
-                  Text('New Recipe', style: theme.textTheme.titleLarge),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
+              children: [
+                // Basic info
+                _CupertinoTextField(controller: nameController, placeholder: 'Recipe name *'),
+                const SizedBox(height: 12),
+                _CupertinoTextField(
+                  controller: descriptionController,
+                  placeholder: 'Description',
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+
+                // Image upload
+                CupertinoButton(
+                  color: const Color(0xFF2C2C2E),
+                  onPressed: () async {
+                    final ImagePicker picker = ImagePicker();
+                    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                    if (image != null) {
+                      selectedImage.value = image;
+                    }
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(CupertinoIcons.photo, size: 20),
+                      const SizedBox(width: 8),
+                      Text(selectedImage.value == null ? 'Add Image' : 'Change Image'),
+                    ],
+                  ),
+                ),
+                if (selectedImage.value != null) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      File(selectedImage.value!.path),
+                      height: 200,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                controller: scrollController,
-                padding: const EdgeInsets.all(24),
-                children: [
-                  // Basic info
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Recipe name *',
-                      border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+
+                // Servings, prep time, cook time
+                Row(
+                  children: [
+                    Expanded(
+                      child: _CupertinoTextField(
+                        controller: servingsController,
+                        placeholder: 'Servings *',
+                        keyboardType: TextInputType.number,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      border: OutlineInputBorder(),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _CupertinoTextField(
+                        controller: prepTimeController,
+                        placeholder: 'Prep (min)',
+                        keyboardType: TextInputType.number,
+                      ),
                     ),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 16),
-                  // Image upload
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final ImagePicker picker = ImagePicker();
-                      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-                      if (image != null) {
-                        selectedImage.value = image;
-                      }
-                    },
-                    icon: const Icon(Icons.image),
-                    label: Text(selectedImage.value == null ? 'Add Image' : 'Change Image'),
-                  ),
-                  if (selectedImage.value != null) ...[
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        File(selectedImage.value!.path),
-                        height: 200,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _CupertinoTextField(
+                        controller: cookTimeController,
+                        placeholder: 'Cook (min)',
+                        keyboardType: TextInputType.number,
                       ),
                     ),
                   ],
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: servingsController,
-                          decoration: const InputDecoration(
-                            labelText: 'Servings *',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: prepTimeController,
-                          decoration: const InputDecoration(
-                            labelText: 'Prep (min)',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: cookTimeController,
-                          decoration: const InputDecoration(
-                            labelText: 'Cook (min)',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        ),
-                      ),
-                    ],
-                  ),
+                ),
 
-                  const SizedBox(height: 24),
-                  const Divider(),
-                  const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                Container(height: 1, color: const Color(0xFF3C3C3E)),
+                const SizedBox(height: 16),
 
-                  // Ingredients section
-                  Row(
-                    children: [
-                      Text('INGREDIENTS', style: theme.textTheme.labelLarge),
-                      const Spacer(),
-                      FilledButton.tonalIcon(
-                        onPressed: () => ingredientsAsync.whenData((ingredients) {
-                          if (ingredients.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Add ingredients first in the Ingredients tab'),
-                              ),
-                            );
-                            return;
-                          }
-                          _showIngredientPicker(context, ingredients, selectedIngredients);
-                        }),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add'),
+                // Ingredients section
+                Row(
+                  children: [
+                    const Text(
+                      'INGREDIENTS',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFFE50914),
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (selectedIngredients.value.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(32),
-                      child: Center(
-                        child: Text(
-                          'No ingredients added',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
+                    ),
+                    const Spacer(),
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      color: const Color(0xFFE50914),
+                      child: const Row(
+                        children: [
+                          Icon(CupertinoIcons.plus, size: 18),
+                          SizedBox(width: 4),
+                          Text('Add', style: TextStyle(fontSize: 14)),
+                        ],
+                      ),
+                      onPressed: () => ingredientsAsync.whenData((ingredients) {
+                        if (ingredients.isEmpty) {
+                          showCupertinoDialog(
+                            context: context,
+                            builder: (context) => CupertinoAlertDialog(
+                              title: const Text('No ingredients'),
+                              content: const Text('Add ingredients first in the Ingredients tab'),
+                              actions: [
+                                CupertinoDialogAction(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('OK'),
+                                ),
+                              ],
+                            ),
+                          );
+                          return;
+                        }
+                        _showIngredientPicker(context, ingredients, selectedIngredients);
+                      }),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (selectedIngredients.value.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(32),
+                    child: const Center(
+                      child: Text(
+                        'No ingredients added',
+                        style: TextStyle(color: CupertinoColors.systemGrey),
+                      ),
+                    ),
+                  )
+                else
+                  ...selectedIngredients.value.map(
+                    (entry) => Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2C2C2E),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  entry.ingredient.name,
+                                  style: const TextStyle(
+                                    color: CupertinoColors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${entry.amountGrams}g',
+                                  style: const TextStyle(
+                                    color: CupertinoColors.systemGrey,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ),
-                    )
-                  else
-                    ...selectedIngredients.value.map(
-                      (entry) => Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          title: Text(entry.ingredient.name),
-                          subtitle: Text('${entry.amountGrams}g'),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.remove_circle_outline),
+                          CupertinoButton(
+                            padding: EdgeInsets.zero,
                             onPressed: () {
                               selectedIngredients.value = selectedIngredients.value
                                   .where((e) => e.ingredient.id != entry.ingredient.id)
                                   .toList();
                             },
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  const SizedBox(height: 24),
-                  const Divider(),
-                  const SizedBox(height: 16),
-
-                  // Steps section
-                  Row(
-                    children: [
-                      Text('COOKING STEPS', style: theme.textTheme.labelLarge),
-                      const Spacer(),
-                      FilledButton.tonalIcon(
-                        onPressed: () {
-                          steps.value = [...steps.value, ''];
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add Step'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  ...List.generate(steps.value.length, (index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            margin: const EdgeInsets.only(top: 8),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primaryContainer,
-                              shape: BoxShape.circle,
+                            child: const Icon(
+                              CupertinoIcons.xmark_circle_fill,
+                              color: Color(0xFFE50914),
                             ),
-                            child: Center(
-                              child: Text(
-                                '${index + 1}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onPrimaryContainer,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextField(
-                              decoration: const InputDecoration(
-                                labelText: 'Step instruction',
-                                border: OutlineInputBorder(),
-                              ),
-                              maxLines: 2,
-                              onChanged: (value) {
-                                final newSteps = [...steps.value];
-                                newSteps[index] = value;
-                                steps.value = newSteps;
-                              },
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: steps.value.length > 1
-                                ? () {
-                                    steps.value = steps.value
-                                        .where((s) => s != steps.value[index])
-                                        .toList();
-                                  }
-                                : null,
                           ),
                         ],
                       ),
-                    );
-                  }),
-
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: submit,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: isUploading.value
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Text('Create Recipe'),
-                      ),
                     ),
                   ),
-                ],
-              ),
+
+                const SizedBox(height: 24),
+                Container(height: 1, color: const Color(0xFF3C3C3E)),
+                const SizedBox(height: 16),
+
+                // Steps section
+                Row(
+                  children: [
+                    const Text(
+                      'COOKING STEPS',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFFE50914),
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const Spacer(),
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      color: const Color(0xFFE50914),
+                      child: const Row(
+                        children: [
+                          Icon(CupertinoIcons.plus, size: 18),
+                          SizedBox(width: 4),
+                          Text('Add Step', style: TextStyle(fontSize: 14)),
+                        ],
+                      ),
+                      onPressed: () {
+                        steps.value = [...steps.value, ''];
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ...List.generate(steps.value.length, (index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          margin: const EdgeInsets.only(top: 8),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFE50914),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${index + 1}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: CupertinoColors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _CupertinoTextField(
+                            placeholder: 'Step instruction',
+                            maxLines: 2,
+                            onChanged: (value) {
+                              final newSteps = [...steps.value];
+                              newSteps[index] = value;
+                              steps.value = newSteps;
+                            },
+                          ),
+                        ),
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: steps.value.length > 1
+                              ? () {
+                                  steps.value = steps.value
+                                      .where((s) => s != steps.value[index])
+                                      .toList();
+                                }
+                              : null,
+                          child: Icon(
+                            CupertinoIcons.xmark_circle_fill,
+                            color: steps.value.length > 1
+                                ? const Color(0xFFE50914)
+                                : CupertinoColors.systemGrey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: CupertinoButton(
+                    color: const Color(0xFFE50914),
+                    onPressed: isUploading.value ? null : submit,
+                    child: isUploading.value
+                        ? const CupertinoActivityIndicator(color: CupertinoColors.white)
+                        : const Text('Create Recipe'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -416,10 +519,8 @@ class AddRecipeSheet extends HookConsumerWidget {
     List<Ingredient> ingredients,
     ValueNotifier<List<_IngredientEntry>> selected,
   ) {
-    showModalBottomSheet(
+    showCupertinoModalPopup(
       context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
       builder: (context) => IngredientPicker(
         ingredients: ingredients,
         onSelect: (ingredient, amount) {
@@ -429,6 +530,40 @@ class AddRecipeSheet extends HookConsumerWidget {
           ];
         },
       ),
+    );
+  }
+}
+
+class _CupertinoTextField extends StatelessWidget {
+  final TextEditingController? controller;
+  final String placeholder;
+  final int maxLines;
+  final TextInputType keyboardType;
+  final ValueChanged<String>? onChanged;
+
+  const _CupertinoTextField({
+    this.controller,
+    required this.placeholder,
+    this.maxLines = 1,
+    this.keyboardType = TextInputType.text,
+    this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoTextField(
+      controller: controller,
+      placeholder: placeholder,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C2C2E),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      style: const TextStyle(color: CupertinoColors.white),
+      placeholderStyle: const TextStyle(color: CupertinoColors.systemGrey),
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      onChanged: onChanged,
     );
   }
 }

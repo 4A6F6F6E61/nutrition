@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Flutter Web (Dynamic IP)",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "web-javascript",
+            "preLaunchTask": "get-local-ip",
+            "args": [
+                "--web-hostname", 
+                "${lastTaskOutput:get-local-ip}", 
+                "--web-port",
+                "8989"
+            ]
+        }
+    ]
+}

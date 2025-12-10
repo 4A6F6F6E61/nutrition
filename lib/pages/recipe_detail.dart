@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +8,6 @@ import 'package:nutrition/models/recipe.dart';
 import 'package:nutrition/models/ingredient.dart';
 import 'package:nutrition/providers/recipe_provider.dart';
 import 'package:nutrition/providers/ingredient_provider.dart';
-import 'package:nutrition/providers/meal_log_provider.dart';
 import 'package:nutrition/utils/image_utils.dart';
 
 class RecipeDetailPage extends HookConsumerWidget {
@@ -22,11 +22,14 @@ class RecipeDetailPage extends HookConsumerWidget {
     final stepsAsync = ref.watch(cookingStepsProvider(recipeId));
     final allUserIngredientsAsync = ref.watch(ingredientsProvider);
 
-    return Scaffold(
-      body: recipeAsync.when(
+    return CupertinoPageScaffold(
+      backgroundColor: const Color(0xFF000000),
+      child: recipeAsync.when(
         data: (recipe) {
           if (recipe == null) {
-            return const Center(child: Text('Recipe not found'));
+            return const Center(
+              child: Text('Recipe not found', style: TextStyle(color: CupertinoColors.white)),
+            );
           }
           return _RecipeDetailContent(
             recipe: recipe,
@@ -35,27 +38,11 @@ class RecipeDetailPage extends HookConsumerWidget {
             allIngredientsAsync: allUserIngredientsAsync,
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, st) => Center(child: Text('Error: $e')),
+        loading: () => const Center(child: CupertinoActivityIndicator()),
+        error: (e, st) => Center(
+          child: Text('Error: $e', style: const TextStyle(color: CupertinoColors.white)),
+        ),
       ),
-      floatingActionButton: recipeAsync.maybeWhen(
-        data: (recipe) => recipe == null
-            ? null
-            : FloatingActionButton.extended(
-                onPressed: () => _showLogMealSheet(context, ref, recipe),
-                icon: const Icon(Icons.add),
-                label: const Text('Log Meal'),
-              ),
-        orElse: () => null,
-      ),
-    );
-  }
-
-  void _showLogMealSheet(BuildContext context, WidgetRef ref, Recipe recipe) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => _LogMealSheet(recipe: recipe),
     );
   }
 }
@@ -540,83 +527,6 @@ class _StepTile extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _LogMealSheet extends HookConsumerWidget {
-  const _LogMealSheet({required this.recipe});
-  final Recipe recipe;
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final servings = useState<double>(1);
-    final date = DateTime.now();
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return DraggableScrollableSheet(
-      initialChildSize: 0.5,
-      minChildSize: 0.3,
-      maxChildSize: 0.8,
-      expand: false,
-      snap: true,
-      snapSizes: const [0.5, 0.8],
-      builder: (context, scrollController) => Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Log Meal', style: theme.textTheme.titleLarge),
-            const SizedBox(height: 16),
-            Text(recipe.name, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                const Text('Servings:'),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  onPressed: servings.value > 0.25
-                      ? () => servings.value = (servings.value - 0.25).clamp(0.25, 20)
-                      : null,
-                ),
-                SizedBox(
-                  width: 60,
-                  child: Text(
-                    servings.value.toString(),
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: () => servings.value = (servings.value + 0.25).clamp(0.25, 20),
-                ),
-              ],
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () async {
-                  await ref
-                      .read(mealLogNotifierProvider.notifier)
-                      .addMealLog(
-                        recipeId: recipe.id,
-                        consumedAt: date,
-                        servingsConsumed: servings.value,
-                      );
-                  if (context.mounted) Navigator.pop(context);
-                },
-                child: const Text('Log Meal'),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

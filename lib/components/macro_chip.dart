@@ -1,12 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 class MacroChip extends StatelessWidget {
-  const MacroChip({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+  const MacroChip({super.key, required this.label, required this.value, required this.color});
 
   final String label;
   final double value;
@@ -22,11 +17,7 @@ class MacroChip extends StatelessWidget {
       ),
       child: Text(
         '$label: ${value.toInt()}g',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: color,
-        ),
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
       ),
     );
   }

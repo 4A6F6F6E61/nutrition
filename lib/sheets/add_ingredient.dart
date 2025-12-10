@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -10,14 +10,42 @@ import 'package:nutrition/providers/ingredient_provider.dart';
 import 'package:nutrition/providers/supabase_providers.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+class _CupertinoTextField extends StatelessWidget {
+  final TextEditingController? controller;
+  final String placeholder;
+  final int maxLines;
+  final TextInputType keyboardType;
+
+  const _CupertinoTextField({
+    this.controller,
+    required this.placeholder,
+    this.maxLines = 1,
+    this.keyboardType = TextInputType.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoTextField(
+      controller: controller,
+      placeholder: placeholder,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C2C2E),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      style: const TextStyle(color: CupertinoColors.white),
+      placeholderStyle: const TextStyle(color: CupertinoColors.systemGrey),
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+    );
+  }
+}
+
 class AddIngredientSheet extends HookConsumerWidget {
   const AddIngredientSheet({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     final nameController = useTextEditingController();
     final descriptionController = useTextEditingController();
     final caloriesController = useTextEditingController();
@@ -30,303 +58,316 @@ class AddIngredientSheet extends HookConsumerWidget {
     final selectedImage = useState<XFile?>(null);
     final isUploading = useState(false);
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.3,
-      maxChildSize: 0.9,
-      expand: false,
-      snap: true,
-      snapSizes: const [0.6, 0.9],
-      builder: (context, scrollController) => Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Column(
-          children: [
-            Container(
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.9,
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1C1E),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      child: Column(
+        children: [
+          // Header with handle bar
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              children: [
+                Container(
+                  width: 36,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.systemGrey,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const SizedBox(width: 16),
+                    const Text(
+                      'Add Ingredient',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: CupertinoColors.white,
+                      ),
+                    ),
+                    const Spacer(),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () => Navigator.pop(context),
+                      child: const Icon(
+                        CupertinoIcons.xmark_circle_fill,
+                        color: CupertinoColors.systemGrey,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Content
+          Expanded(
+            child: ListView(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-              child: Row(
-                children: [
-                  Text('Add Ingredient', style: theme.textTheme.titleLarge),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
+              children: [
+                // Basic info
+                _CupertinoTextField(controller: nameController, placeholder: 'Ingredient name *'),
+                const SizedBox(height: 12),
+                _CupertinoTextField(
+                  controller: descriptionController,
+                  placeholder: 'Description',
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+
+                // Image upload
+                CupertinoButton(
+                  color: const Color(0xFF2C2C2E),
+                  onPressed: () async {
+                    final ImagePicker picker = ImagePicker();
+                    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                    if (image != null) {
+                      selectedImage.value = image;
+                    }
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(CupertinoIcons.photo, size: 20),
+                      const SizedBox(width: 8),
+                      Text(selectedImage.value == null ? 'Add Image' : 'Change Image'),
+                    ],
+                  ),
+                ),
+                if (selectedImage.value != null) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      File(selectedImage.value!.path),
+                      height: 200,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                controller: scrollController,
-                padding: const EdgeInsets.all(24),
-                children: [
-                  // Basic info
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Ingredient name *',
-                      border: OutlineInputBorder(),
+
+                const SizedBox(height: 16),
+                Container(height: 1, color: const Color(0xFF3C3C3E)),
+                const SizedBox(height: 16),
+
+                const Text(
+                  'NUTRITION (per 100g)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFFE50914),
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Calories
+                _CupertinoTextField(
+                  controller: caloriesController,
+                  placeholder: 'Calories (kcal) *',
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                ),
+                const SizedBox(height: 16),
+
+                // Macros row 1
+                Row(
+                  children: [
+                    Expanded(
+                      child: _CupertinoTextField(
+                        controller: proteinController,
+                        placeholder: 'Protein (g) *',
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      border: OutlineInputBorder(),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _CupertinoTextField(
+                        controller: carbsController,
+                        placeholder: 'Carbs (g) *',
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      ),
                     ),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 16),
-                  // Image upload
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final ImagePicker picker = ImagePicker();
-                      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-                      if (image != null) {
-                        selectedImage.value = image;
-                      }
-                    },
-                    icon: const Icon(Icons.image),
-                    label: Text(selectedImage.value == null ? 'Add Image' : 'Change Image'),
-                  ),
-                  if (selectedImage.value != null) ...[
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        File(selectedImage.value!.path),
-                        height: 200,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _CupertinoTextField(
+                        controller: fatController,
+                        placeholder: 'Fat (g) *',
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 16),
 
-                  const SizedBox(height: 24),
-                  const Divider(),
-                  const SizedBox(height: 16),
-
-                  Text(
-                    'NUTRITION (per 100g)',
-                    style: theme.textTheme.labelLarge?.copyWith(color: colorScheme.primary),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Calories
-                  TextField(
-                    controller: caloriesController,
-                    decoration: const InputDecoration(
-                      labelText: 'Calories (kcal) *',
-                      border: OutlineInputBorder(),
+                // Macros row 2
+                Row(
+                  children: [
+                    Expanded(
+                      child: _CupertinoTextField(
+                        controller: fiberController,
+                        placeholder: 'Fiber (g)',
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      ),
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Macros row 1
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: proteinController,
-                          decoration: const InputDecoration(
-                            labelText: 'Protein (g) *',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                          ],
-                        ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _CupertinoTextField(
+                        controller: sugarController,
+                        placeholder: 'Sugar (g)',
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: carbsController,
-                          decoration: const InputDecoration(
-                            labelText: 'Carbs (g) *',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                          ],
-                        ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _CupertinoTextField(
+                        controller: sodiumController,
+                        placeholder: 'Sodium (mg)',
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: fatController,
-                          decoration: const InputDecoration(
-                            labelText: 'Fat (g) *',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+                    ),
+                  ],
+                ),
 
-                  // Macros row 2
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: fiberController,
-                          decoration: const InputDecoration(
-                            labelText: 'Fiber (g)',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: sugarController,
-                          decoration: const InputDecoration(
-                            labelText: 'Sugar (g)',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: sodiumController,
-                          decoration: const InputDecoration(
-                            labelText: 'Sodium (mg)',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: CupertinoButton(
+                    color: const Color(0xFFE50914),
+                    onPressed: isUploading.value
+                        ? null
+                        : () async {
+                            // Validation
+                            if (nameController.text.isEmpty) {
+                              showCupertinoDialog(
+                                context: context,
+                                builder: (context) => CupertinoAlertDialog(
+                                  title: const Text('Error'),
+                                  content: const Text('Please enter an ingredient name'),
+                                  actions: [
+                                    CupertinoDialogAction(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('OK'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              return;
+                            }
 
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: () async {
-                        // Validation
-                        if (nameController.text.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please enter an ingredient name')),
-                          );
-                          return;
-                        }
+                            final calories = double.tryParse(caloriesController.text);
+                            final protein = double.tryParse(proteinController.text);
+                            final carbs = double.tryParse(carbsController.text);
+                            final fat = double.tryParse(fatController.text);
 
-                        final calories = double.tryParse(caloriesController.text);
-                        final protein = double.tryParse(proteinController.text);
-                        final carbs = double.tryParse(carbsController.text);
-                        final fat = double.tryParse(fatController.text);
+                            if (calories == null ||
+                                protein == null ||
+                                carbs == null ||
+                                fat == null) {
+                              showCupertinoDialog(
+                                context: context,
+                                builder: (context) => CupertinoAlertDialog(
+                                  title: const Text('Error'),
+                                  content: const Text(
+                                    'Please fill in all required nutrition fields',
+                                  ),
+                                  actions: [
+                                    CupertinoDialogAction(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('OK'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              return;
+                            }
 
-                        if (calories == null || protein == null || carbs == null || fat == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please fill in all required nutrition fields'),
-                            ),
-                          );
-                          return;
-                        }
+                            isUploading.value = true;
+                            String? uploadedImageFileName;
 
-                        isUploading.value = true;
-                        String? uploadedImageFileName;
+                            // Upload image if selected
+                            if (selectedImage.value != null) {
+                              try {
+                                final client = ref.read(supabaseClientProvider);
+                                final session = ref.read(sessionProvider).value;
+                                if (session != null) {
+                                  final rawBytes = await File(
+                                    selectedImage.value!.path,
+                                  ).readAsBytes();
+                                  final decodedImage = img.decodeImage(rawBytes);
+                                  if (decodedImage == null) throw 'Failed to process image';
+                                  final compressedBytes = img.encodeJpg(decodedImage, quality: 80);
 
-                        // Upload image if selected
-                        if (selectedImage.value != null) {
-                          try {
-                            final client = ref.read(supabaseClientProvider);
-                            final session = ref.read(sessionProvider).value;
-                            if (session != null) {
-                              final rawBytes = await File(selectedImage.value!.path).readAsBytes();
-                              final decodedImage = img.decodeImage(rawBytes);
-                              if (decodedImage == null) throw 'Failed to process image';
-                              final compressedBytes = img.encodeJpg(decodedImage, quality: 80);
+                                  final time = DateTime.now().millisecondsSinceEpoch;
 
-                              final time = DateTime.now().millisecondsSinceEpoch;
+                                  await client.storage
+                                      .from('nutrition-images')
+                                      .uploadBinary(
+                                        '${session.user.id}/ingredients/$time.jpg',
+                                        compressedBytes,
+                                        fileOptions: const FileOptions(contentType: 'image/jpeg'),
+                                      );
 
-                              await client.storage
-                                  .from('nutrition-images')
-                                  .uploadBinary(
-                                    '${session.user.id}/ingredients/$time.jpg',
-                                    compressedBytes,
-                                    fileOptions: const FileOptions(contentType: 'image/jpeg'),
+                                  uploadedImageFileName = time.toString();
+                                }
+                              } catch (e) {
+                                isUploading.value = false;
+                                if (context.mounted) {
+                                  showCupertinoDialog(
+                                    context: context,
+                                    builder: (context) => CupertinoAlertDialog(
+                                      title: const Text('Error'),
+                                      content: Text('Failed to upload image: $e'),
+                                      actions: [
+                                        CupertinoDialogAction(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
                                   );
-
-                              uploadedImageFileName = time.toString();
+                                }
+                                return;
+                              }
                             }
-                          } catch (e) {
+
+                            await ref
+                                .read(ingredientNotifierProvider.notifier)
+                                .addIngredient(
+                                  name: nameController.text,
+                                  description: descriptionController.text.isEmpty
+                                      ? null
+                                      : descriptionController.text,
+                                  imagePath: uploadedImageFileName,
+                                  calories: calories,
+                                  protein: protein,
+                                  carbohydrates: carbs,
+                                  fat: fat,
+                                  fiber: double.tryParse(fiberController.text),
+                                  sugar: double.tryParse(sugarController.text),
+                                  sodium: double.tryParse(sodiumController.text),
+                                );
+
                             isUploading.value = false;
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(SnackBar(content: Text('Failed to upload image: $e')));
-                            }
-                            return;
-                          }
-                        }
-
-                        await ref
-                            .read(ingredientNotifierProvider.notifier)
-                            .addIngredient(
-                              name: nameController.text,
-                              description: descriptionController.text.isEmpty
-                                  ? null
-                                  : descriptionController.text,
-                              imagePath: uploadedImageFileName,
-                              calories: calories,
-                              protein: protein,
-                              carbohydrates: carbs,
-                              fat: fat,
-                              fiber: double.tryParse(fiberController.text),
-                              sugar: double.tryParse(sugarController.text),
-                              sodium: double.tryParse(sodiumController.text),
-                            );
-
-                        isUploading.value = false;
-                        if (context.mounted) Navigator.pop(context);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: isUploading.value
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Text('Add Ingredient'),
-                      ),
-                    ),
+                            if (context.mounted) Navigator.pop(context);
+                          },
+                    child: isUploading.value
+                        ? const CupertinoActivityIndicator(color: CupertinoColors.white)
+                        : const Text('Add Ingredient'),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 16),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

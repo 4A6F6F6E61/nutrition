@@ -1,6 +1,6 @@
 import 'dart:developer' as dev;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:nutrition/providers/supabase_providers.dart';
@@ -34,9 +34,17 @@ class LoginScreen extends HookConsumerWidget {
           );
 
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Account created. Check your email to verify.'),
+            showCupertinoDialog(
+              context: context,
+              builder: (context) => CupertinoAlertDialog(
+                title: const Text('Success'),
+                content: const Text('Account created. Check your email to verify.'),
+                actions: [
+                  CupertinoDialogAction(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
               ),
             );
           }
@@ -52,15 +60,35 @@ class LoginScreen extends HookConsumerWidget {
         }
       } on AuthException catch (error) {
         if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(error.message)));
+          showCupertinoDialog(
+            context: context,
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text('Error'),
+              content: Text(error.message),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
           dev.log(error.message, name: 'LoginScreen');
         }
       } catch (error) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Authentication failed: $error')),
+          showCupertinoDialog(
+            context: context,
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text('Error'),
+              content: Text('Authentication failed: $error'),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
           );
         }
       } finally {
@@ -68,110 +96,126 @@ class LoginScreen extends HookConsumerWidget {
       }
     }
 
-    return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Sign in to continue',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Enter a valid email';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: passwordController,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          obscurePassword.value
-                              ? Icons.visibility_off
-                              : Icons.visibility,
+    return CupertinoPageScaffold(
+      backgroundColor: const Color(0xFF000000),
+      child: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Netflix-style logo/title
+                    const Center(
+                      child: Text(
+                        'NUTRITION',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFE50914),
+                          letterSpacing: 2,
                         ),
-                        onPressed: () =>
-                            obscurePassword.value = !obscurePassword.value,
                       ),
                     ),
-                    obscureText: obscurePassword.value,
-                    validator: (value) {
-                      if (value == null || value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  if (isRegister.value) ...[
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: confirmPasswordController,
-                      decoration: const InputDecoration(
-                        labelText: 'Confirm password',
-                        border: OutlineInputBorder(),
+                    const SizedBox(height: 8),
+                    const Center(
+                      child: Text(
+                        'Sign in to continue',
+                        style: TextStyle(fontSize: 16, color: CupertinoColors.systemGrey),
                       ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Email field
+                    CupertinoTextField(
+                      controller: emailController,
+                      placeholder: 'Email',
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2C2C2E),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      style: const TextStyle(color: CupertinoColors.white),
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Password field
+                    CupertinoTextField(
+                      controller: passwordController,
+                      placeholder: 'Password',
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2C2C2E),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      style: const TextStyle(color: CupertinoColors.white),
                       obscureText: obscurePassword.value,
-                      validator: (value) {
-                        if (value == null || value.isEmpty)
-                          return 'Please confirm your password';
-                        if (value != passwordController.text)
-                          return 'Passwords do not match';
-                        return null;
-                      },
+                      suffix: CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () => obscurePassword.value = !obscurePassword.value,
+                        child: Icon(
+                          obscurePassword.value
+                              ? CupertinoIcons.eye_slash_fill
+                              : CupertinoIcons.eye_fill,
+                          color: CupertinoColors.systemGrey,
+                        ),
+                      ),
+                    ),
+
+                    if (isRegister.value) ...[
+                      const SizedBox(height: 12),
+                      CupertinoTextField(
+                        controller: confirmPasswordController,
+                        placeholder: 'Confirm password',
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2C2C2E),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        style: const TextStyle(color: CupertinoColors.white),
+                        obscureText: obscurePassword.value,
+                      ),
+                    ],
+
+                    const SizedBox(height: 24),
+
+                    // Submit button
+                    SizedBox(
+                      width: double.infinity,
+                      child: CupertinoButton(
+                        color: const Color(0xFFE50914),
+                        onPressed: isLoading.value ? null : submit,
+                        child: isLoading.value
+                            ? const CupertinoActivityIndicator(color: CupertinoColors.white)
+                            : Text(
+                                isRegister.value ? 'Create account' : 'Sign in',
+                                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                              ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Toggle button
+                    Center(
+                      child: CupertinoButton(
+                        onPressed: () {
+                          isRegister.value = !isRegister.value;
+                        },
+                        child: Text(
+                          isRegister.value ? 'Have an account? Sign in' : 'Create an account',
+                          style: const TextStyle(color: CupertinoColors.systemGrey),
+                        ),
+                      ),
                     ),
                   ],
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: isLoading.value ? null : submit,
-                      child: isLoading.value
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(
-                              isRegister.value ? 'Create account' : 'Sign in',
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      isRegister.value = !isRegister.value;
-                    },
-                    child: Text(
-                      isRegister.value
-                          ? 'Have an account? Sign in'
-                          : 'Create an account',
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),

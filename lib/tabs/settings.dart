@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:nutrition/providers/supabase_providers.dart';
 import 'package:nutrition/providers/theme_provider.dart';
+import 'package:nutrition/theme.dart';
 import 'package:nutrition/util.dart';
 
 class SettingsScreen extends HookConsumerWidget {
@@ -11,19 +12,16 @@ class SettingsScreen extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final client = ref.watch(supabaseClientProvider);
     final sessionAsync = ref.watch(sessionProvider);
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     Future<void> signOut() async {
       await client.auth.signOut();
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Signed out')));
+      // Show toast/snackbar equivalent
     }
 
-    return Scaffold(
-      body: sessionAsync.when(
+    return CupertinoPageScaffold(
+      backgroundColor: const Color(0xFF000000),
+      child: sessionAsync.when(
         data: (session) {
           final user = session?.user;
           final email = user?.email ?? 'Unknown';
@@ -39,12 +37,14 @@ class SettingsScreen extends HookConsumerWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        colorScheme.primaryContainer,
-                        colorScheme.secondaryContainer,
-                      ],
                       begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                      end: const Alignment(-0.95, 1.0),
+                      colors: [
+                        AppTheme.primaryColor.withOpacity(0.45),
+                        AppTheme.backgroundColor,
+                        AppTheme.backgroundColor,
+                      ],
+                      stops: const [0.1, 1.0, 1.0],
                     ),
                   ),
                   padding: const EdgeInsets.fromLTRB(16, 48, 16, 24),
@@ -53,13 +53,17 @@ class SettingsScreen extends HookConsumerWidget {
                     children: [
                       Row(
                         children: [
-                          CircleAvatar(
-                            radius: 32,
-                            backgroundColor: colorScheme.primary,
-                            child: Icon(
-                              Icons.person,
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppTheme.primaryColor.withAlpha(200),
+                            ),
+                            child: const Icon(
+                              CupertinoIcons.person_fill,
                               size: 32,
-                              color: colorScheme.onPrimary,
+                              color: AppTheme.textPrimary,
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -69,15 +73,17 @@ class SettingsScreen extends HookConsumerWidget {
                               children: [
                                 Text(
                                   'Account',
-                                  style: theme.textTheme.labelMedium?.copyWith(
-                                    color: colorScheme.onPrimaryContainer,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppTheme.textSecondary.withAlpha(190),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   email,
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    color: colorScheme.onPrimaryContainer,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    color: AppTheme.textPrimary,
                                     fontWeight: FontWeight.bold,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -86,9 +92,9 @@ class SettingsScreen extends HookConsumerWidget {
                                   const SizedBox(height: 4),
                                   Text(
                                     'Member since ${formatDate(createdAt)}',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.onPrimaryContainer
-                                          .withAlpha(179),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppTheme.textSecondary,
                                     ),
                                   ),
                                 ],
@@ -103,296 +109,321 @@ class SettingsScreen extends HookConsumerWidget {
               ),
 
               // Settings list
-              SliverPadding(
-                padding: const EdgeInsets.all(16),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    // Preferences section
-                    Text(
-                      'PREFERENCES',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.primary,
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: CupertinoListSection.insetGrouped(
+                    header: const Text(
+                      'Preferences',
+                      style: TextStyle(
+                        fontSize: 19,
                         fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Card(
-                      elevation: 0,
-                      color: colorScheme.surfaceContainerHighest,
-                      child: Column(
-                        children: [
-                          ListTile(
-                            leading: const Icon(Icons.notifications_outlined),
-                            title: const Text('Notifications'),
-                            subtitle: const Text(
-                              'Manage notification settings',
-                            ),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Notifications settings coming soon',
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          const Divider(height: 1),
-                          ListTile(
-                            leading: const Icon(Icons.color_lens_outlined),
-                            title: const Text('Theme Color'),
-                            subtitle: Text(ref.watch(themeProvider).label),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () {
-                              _showThemeSelector(context, ref);
-                            },
-                          ),
-                          const Divider(height: 1),
-                          ListTile(
-                            leading: const Icon(Icons.restaurant_outlined),
-                            title: const Text('Dietary preferences'),
-                            subtitle: const Text('Set your dietary goals'),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Dietary settings coming soon'),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Account section
-                    Text(
-                      'ACCOUNT',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Card(
-                      elevation: 0,
-                      color: colorScheme.surfaceContainerHighest,
-                      child: Column(
-                        children: [
-                          ListTile(
-                            leading: const Icon(Icons.person_outline),
-                            title: const Text('Profile'),
-                            subtitle: const Text(
-                              'Edit your profile information',
-                            ),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Profile settings coming soon'),
-                                ),
-                              );
-                            },
-                          ),
-                          const Divider(height: 1),
-                          ListTile(
-                            leading: const Icon(Icons.lock_outline),
-                            title: const Text('Privacy & Security'),
-                            subtitle: const Text(
-                              'Manage your account security',
-                            ),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Security settings coming soon',
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          const Divider(height: 1),
-                          ListTile(
-                            leading: Icon(
-                              Icons.logout,
-                              color: colorScheme.error,
-                            ),
-                            title: Text(
-                              'Sign out',
-                              style: TextStyle(color: colorScheme.error),
-                            ),
-                            onTap: () async {
-                              final confirm = await showDialog<bool>(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('Sign out'),
-                                  content: const Text(
-                                    'Are you sure you want to sign out?',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, false),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    FilledButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, true),
-                                      child: const Text('Sign out'),
-                                    ),
-                                  ],
-                                ),
-                              );
-
-                              if (confirm == true) {
-                                await signOut();
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // About section
-                    Text(
-                      'ABOUT',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Card(
-                      elevation: 0,
-                      color: colorScheme.surfaceContainerHighest,
-                      child: Column(
-                        children: [
-                          ListTile(
-                            leading: const Icon(Icons.info_outline),
-                            title: const Text('About'),
-                            subtitle: const Text('Version 1.0.0'),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () {
-                              showAboutDialog(
-                                context: context,
-                                applicationName: 'Nutrition',
-                                applicationVersion: '1.0.0',
-                                applicationIcon: Icon(
-                                  Icons.restaurant_menu,
-                                  size: 48,
-                                  color: colorScheme.primary,
-                                ),
-                              );
-                            },
-                          ),
-                          const Divider(height: 1),
-                          ListTile(
-                            leading: const Icon(Icons.description_outlined),
-                            title: const Text('Terms & Privacy'),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Terms & Privacy coming soon'),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // User ID for debugging
-                    if (userId.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Text(
-                          'User ID: ${userId.substring(0, 8)}...',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          textAlign: TextAlign.center,
+                    children: [
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.bell, color: AppTheme.textPrimary),
+                        title: const Text(
+                          'Notifications',
+                          style: TextStyle(color: AppTheme.textPrimary),
                         ),
+                        subtitle: const Text(
+                          'Manage notification settings',
+                          style: TextStyle(color: AppTheme.textSecondary),
+                        ),
+                        trailing: const Icon(CupertinoIcons.forward, color: AppTheme.textSecondary),
+                        onTap: () {
+                          // TODO: Implement
+                        },
                       ),
-                  ]),
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.paintbrush, color: AppTheme.textPrimary),
+                        title: const Text(
+                          'Theme Color',
+                          style: TextStyle(color: AppTheme.textPrimary),
+                        ),
+                        subtitle: Text(
+                          AppThemeColor.values
+                              .firstWhere(
+                                (t) => t.color == ref.watch(themeProvider),
+                                orElse: () => AppThemeColor.netflixRed,
+                              )
+                              .label,
+                          style: const TextStyle(color: AppTheme.textSecondary),
+                        ),
+                        trailing: const Icon(CupertinoIcons.forward, color: AppTheme.textSecondary),
+                        onTap: () {
+                          _showThemeSelector(context, ref);
+                        },
+                      ),
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.chart_bar, color: AppTheme.textPrimary),
+                        title: const Text(
+                          'Dietary preferences',
+                          style: TextStyle(color: AppTheme.textPrimary),
+                        ),
+                        subtitle: const Text(
+                          'Set your dietary goals',
+                          style: TextStyle(color: AppTheme.textSecondary),
+                        ),
+                        trailing: const Icon(CupertinoIcons.forward, color: AppTheme.textSecondary),
+                        onTap: () {
+                          // TODO: Implement
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
+
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: CupertinoListSection.insetGrouped(
+                    header: const Text(
+                      'Account',
+                      style: TextStyle(
+                        fontSize: 19,
+                        color: AppTheme.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    children: [
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.person, color: AppTheme.textPrimary),
+                        title: const Text('Profile', style: TextStyle(color: AppTheme.textPrimary)),
+                        subtitle: const Text(
+                          'Edit your profile information',
+                          style: TextStyle(color: AppTheme.textSecondary),
+                        ),
+                        trailing: const Icon(CupertinoIcons.forward, color: AppTheme.textSecondary),
+                        onTap: () {
+                          // TODO: Implement
+                        },
+                      ),
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.lock, color: AppTheme.textPrimary),
+                        title: const Text(
+                          'Privacy & Security',
+                          style: TextStyle(color: AppTheme.textPrimary),
+                        ),
+                        subtitle: const Text(
+                          'Manage your account security',
+                          style: TextStyle(color: AppTheme.textSecondary),
+                        ),
+                        trailing: const Icon(CupertinoIcons.forward, color: AppTheme.textSecondary),
+                        onTap: () {
+                          // TODO: Implement
+                        },
+                      ),
+                      CupertinoListTile(
+                        leading: const Icon(
+                          CupertinoIcons.square_arrow_right,
+                          color: AppTheme.primaryColor,
+                        ),
+                        title: const Text(
+                          'Sign out',
+                          style: TextStyle(color: AppTheme.primaryColor),
+                        ),
+                        onTap: () async {
+                          final confirm = await showCupertinoDialog<bool>(
+                            context: context,
+                            builder: (context) => CupertinoAlertDialog(
+                              title: const Text('Sign out'),
+                              content: const Text('Are you sure you want to sign out?'),
+                              actions: [
+                                CupertinoDialogAction(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                CupertinoDialogAction(
+                                  isDestructiveAction: true,
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('Sign out'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirm == true) {
+                            await signOut();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: CupertinoListSection.insetGrouped(
+                    header: const Text(
+                      'About',
+                      style: TextStyle(
+                        fontSize: 19,
+                        color: AppTheme.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    children: [
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.info, color: AppTheme.textPrimary),
+                        title: const Text('About', style: TextStyle(color: AppTheme.textPrimary)),
+                        subtitle: const Text(
+                          'Version 1.0.0',
+                          style: TextStyle(color: AppTheme.textSecondary),
+                        ),
+                        trailing: const Icon(CupertinoIcons.forward, color: AppTheme.textSecondary),
+                        onTap: () {
+                          showCupertinoDialog(
+                            context: context,
+                            builder: (context) => CupertinoAlertDialog(
+                              title: const Text('Nutrition'),
+                              content: const Text('Version 1.0.0\n\nA nutrition tracking app'),
+                              actions: [
+                                CupertinoDialogAction(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('OK'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.doc_text, color: AppTheme.textPrimary),
+                        title: const Text(
+                          'Terms & Privacy',
+                          style: TextStyle(color: AppTheme.textPrimary),
+                        ),
+                        trailing: const Icon(CupertinoIcons.forward, color: AppTheme.textSecondary),
+                        onTap: () {
+                          // TODO: Implement
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // User ID for debugging
+              if (userId.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      'User ID: ${userId.substring(0, 8)}...',
+                      style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+
+              const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) =>
-            Center(child: Text('Error loading account: $error')),
+        loading: () => const Center(child: CupertinoActivityIndicator()),
+        error: (error, stack) => Center(
+          child: Text(
+            'Error loading account: $error',
+            style: TextStyle(color: AppTheme.textPrimary),
+          ),
+        ),
       ),
     );
   }
 
   void _showThemeSelector(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
+    showCupertinoModalPopup(
       context: context,
       builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
+        height: 400,
+        decoration: const BoxDecoration(
+          color: AppTheme.sheetBackground,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Choose Theme Color',
-              style: Theme.of(context).textTheme.titleLarge,
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: 36,
+              height: 5,
+              decoration: BoxDecoration(
+                color: AppTheme.textSecondary,
+                borderRadius: BorderRadius.circular(3),
+              ),
             ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: AppThemeColor.values.map((themeColor) {
-                final isSelected = ref.watch(themeProvider) == themeColor;
-                return InkWell(
-                  onTap: () {
-                    ref.read(themeProvider.notifier).setTheme(themeColor);
-                    Navigator.pop(context);
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: themeColor.color,
-                      borderRadius: BorderRadius.circular(12),
-                      border: isSelected
-                          ? Border.all(color: Colors.white, width: 3)
-                          : null,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (isSelected)
-                          const Icon(Icons.check, color: Colors.white, size: 32)
-                        else
-                          const SizedBox(height: 32),
-                        const SizedBox(height: 8),
-                        Text(
-                          themeColor.label,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Choose Theme Color',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
                   ),
-                );
-              }).toList(),
+                  itemCount: AppThemeColor.values.length,
+                  itemBuilder: (context, index) {
+                    final themeColor = AppThemeColor.values[index];
+                    final isSelected = ref.watch(themeProvider) == themeColor.color;
+                    return GestureDetector(
+                      onTap: () {
+                        ref.read(themeProvider.notifier).setTheme(themeColor);
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: themeColor.color,
+                          borderRadius: BorderRadius.circular(12),
+                          border: isSelected
+                              ? Border.all(color: AppTheme.textPrimary, width: 3)
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (isSelected)
+                              const Icon(
+                                CupertinoIcons.check_mark,
+                                color: AppTheme.textPrimary,
+                                size: 24,
+                              ),
+                            const SizedBox(height: 4),
+                            Text(
+                              themeColor.label,
+                              style: const TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
-            const SizedBox(height: 16),
           ],
         ),
       ),
